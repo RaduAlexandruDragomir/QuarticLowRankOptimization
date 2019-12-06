@@ -1,6 +1,7 @@
 using Distributions
 using LinearAlgebra
 using SparseArrays
+using Hungarian
 
 """GenMatrix can be either a dense or a sparse CSC matrix"""
 GenMatrix = Union{Matrix{Float64}, SparseMatrixCSC{Float64, Int}}

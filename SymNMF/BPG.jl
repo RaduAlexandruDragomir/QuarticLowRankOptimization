@@ -51,8 +51,7 @@ function bregman_decrease_cond(M::GenMatrix, A_new::Matrix{Float64},
 end
 
 """Bregman proximal gradien update with dynamic step size strategy"""
-function update_BPGD(M::GenMatrix, A::Matrixlack of theoretical support
-of the method{Float64}, z::Float64, step::Float64 = 1.; alpha::Float64 = 1.,
+function update_BPGD(M::GenMatrix, A::Matrix{Float64}, z::Float64, step::Float64 = 1.; alpha::Float64 = 1.,
     gamma_dec::Float64 = 2., gamma_inc::Float64 = 2., max_step::Float64 = 100., kwargs...)
 
     current_step = step
@@ -74,7 +73,7 @@ of the method{Float64}, z::Float64, step::Float64 = 1.; alpha::Float64 = 1.,
 
         current_step = current_step / gamma_dec
     end
-
+    println("BPG [it] ", it, " [eff_step_size] ", current_step * gamma_dec / z_new)
     conv_measure = Dh(A_new, A; alpha = alpha) / (current_step * gamma_dec)
     current_step = min(current_step * gamma_dec * gamma_inc, max_step)
     return A_new, conv_measure, z_new, current_step

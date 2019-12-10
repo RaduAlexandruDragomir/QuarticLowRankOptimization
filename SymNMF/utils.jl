@@ -70,18 +70,18 @@ function read_sparse_matrix(X_sp::Matrix{Float64})
 end
 
 """fins the unique real root of the equation
-    z ^ 3 - alpha * z ^ 2 = c with c > 0
+    z ^ 3 - sigma * z ^ 2 = c with c > 0
 """
-function solve_cubic(c::Float64, alpha::Float64 = 1.)
-    z = alpha / 3.
-    alpha3 = alpha ^ 3
-    delta = c ^ 2 + 4 * alpha3 * c / 27.
+function solve_cubic(c::Float64, sigma::Float64 = 1.)
+    z = sigma / 3.
+    sigma3 = sigma ^ 3
+    delta = c ^ 2 + 4 * sigma3 * c / 27.
     sq_delta = sqrt(delta)
 
-    b = 0.5 * c + alpha3 / 27.
-
-    z = z + (b + 0.5 * sq_delta) ^ (1. / 3.)
-    z = z + (b - 0.5 * sq_delta) ^ (1. / 3.)
+    b = 0.5 * c + sigma3 / 27.
+    
+    z = z + cbrt(b + 0.5 * sq_delta)
+    z = z + cbrt(b - 0.5 * sq_delta)
 
     return z
 end

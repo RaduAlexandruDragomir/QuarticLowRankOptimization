@@ -10,8 +10,6 @@ Keyword optionnal arguments
         :pga : Projected Gradient method with Armijo line search
         :nolips : NoLips with fixed step size rule
         :dyn_nolips : NoLips with dynamical step size strategy
-        :restart_nolips : NoLips with dynamical step size and
-            Nesterov acceleration with restart.
         :beta : Beta-SNMF
         :cd : coordinate descent
         :sym_hals
@@ -74,31 +72,9 @@ function SymNMF(M::GenMatrix, r::Int;
     pgnorm_cond = true
     it = 0
 
-
     # algorithm-specific initializations
-    if algo == :pga
+    if (algo == :pga) || (algo == :nolips) || (algo == :dyn_nolips)
         step = kwargs[:step]
-
-    elseif (algo == :nolips) || (algo == :dyn_nolips)  || (algo == :restart_nolips)
-        alpha = norm1inf(M) / 3
-        z = norm(A) ^ 2 + alpha
-        initial_pgnorm = update_BPG(M, A, z; alpha = alpha, kwargs...)[2]
-
-        if (algo == :restart_nolips)
-            A_z = copy(A)
-            tk = 1.
-        end
-        if (algo == :dyn_nolips) || (algo == :restart_nolips)
-            step = kwargs[:step]
-            max_step = 4. * r
-        end
-
-        if algo == :restart_nolips
-            # restart strategy
-            restart_count = 1 # alpha_restart^k
-            C_restart, rho_restart = kwargs[:C_restart], kwargs[:rho_restart]
-            restart_sched = C_restart
-        end
 
     elseif algo == :beta
         E = frobenius_sym_loss(A, M)
@@ -136,10 +112,9 @@ function SymNMF(M::GenMatrix, r::Int;
         if algo == :pga
             A, pg_norm, step = update_PG_armijo(M, A, step; kwargs...)
         elseif algo == :nolips
-            A, pg_norm, z = update_BPG(M, A, z; alpha = alpha, kwargs...)
+            A, pg_norm = update_BPG(M, A; kwargs...)
         elseif algo == :dyn_nolips
-            A, pg_norm, z, step = update_BPGD(M, A, z, step;
-                max_step = max_step, alpha = alpha, kwargs...)
+            A, pg_norm, step = update_BPGD(M, A, step; kwargs...)
         elseif algo == :beta
             A, pg_norm, E = update_Beta(M, A, E; kwargs...)
         elseif algo == :cd
@@ -150,21 +125,6 @@ function SymNMF(M::GenMatrix, r::Int;
         elseif algo == :sym_anls
             A, Bt, = update_ANLS(M, Mt, A, Bt; kwargs...)
             pg_norm = pgradnorm_NMF(M, Mt, A, Bt; kwargs...)
-        elseif algo == :restart_nolips
-            A, pg_norm, A_z, z, tk, step = update_ABPGD(M, A, z, A_z, tk, step; alpha = alpha,
-                max_step = max_step, kwargs...)
-
-            # restart strategy
-            if algo == :restart_nolips
-                if restart_sched  == 0
-                    A_z = copy(A)
-                    tk = 1.
-                    restart_count *= rho_restart
-                    restart_sched = C_restart * restart_count
-                else
-                    restart_sched = restart_sched - 1
-                end
-            end
         end
 
         # checking stopping criterion

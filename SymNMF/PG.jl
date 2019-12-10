@@ -37,32 +37,16 @@ function update_PG_armijo(M::GenMatrix, A::Matrix{Float64},
     old_loss = frobenius_sym_loss(A, M)
     A_temp = max.(A - step * grad, 0.)
 
-    if sufficient_decrease_cond(M, A_temp, A, grad, old_loss, sigma)
-         # if condition is satisfied, increase until not satisfied
-        while keep_going
-            step = step / beta
-            A_temp = max.(A - step * grad, 0.)
-            suff_decrease = sufficient_decrease_cond(M, A_temp, A, grad, old_loss, sigma)
-
-            it += 1
-            keep_going = suff_decrease && (it <= max_inner_iter)
-        end
-
-        # when we exit loop, it means we went one step too far
+    while keep_going
         step = step * beta
         A_temp = max.(A - step * grad, 0.)
+        suff_decrease = sufficient_decrease_cond(M, A_temp, A, grad, old_loss, sigma)
 
-    else
-        while keep_going
-            step = step * beta
-            A_temp = max.(A - step * grad, 0.)
-            suff_decrease = sufficient_decrease_cond(M, A_temp, A, grad, old_loss, sigma)
-
-            it += 1
-            keep_going = !suff_decrease && (it <= max_inner_iter)
-        end
+        it += 1
+        keep_going = !suff_decrease && (it <= max_inner_iter)
     end
-    println("PG  [it] ", it, " [eff_step_size] ", step)
+
+#     println("PG  [it] ", it, " [eff_step_size] ", step)
     pgrad_norm = pgradnorm_SNMF(grad, A)
-    return A_temp, pgrad_norm, step
+    return A_temp, pgrad_norm, step / beta
 end

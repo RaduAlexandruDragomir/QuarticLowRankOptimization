@@ -10,6 +10,7 @@ Keyword optionnal arguments
         :pga : Projected Gradient method with Armijo line search
         :nolips : NoLips with fixed step size rule
         :dyn_nolips : NoLips with dynamical step size strategy
+        :adap_nolips : NoLips with adaptive coefficients
         :beta : Beta-SNMF
         :cd : coordinate descent
         :sym_hals
@@ -75,6 +76,9 @@ function SymNMF(M::GenMatrix, r::Int;
     # algorithm-specific initializations
     if (algo == :pga) || (algo == :nolips) || (algo == :dyn_nolips)
         step = kwargs[:step]
+    
+    elseif (algo == :adap_nolips)
+        step, alpha, sigma = 1., 1., 1.
 
     elseif algo == :beta
         E = frobenius_sym_loss(A, M)
@@ -115,6 +119,8 @@ function SymNMF(M::GenMatrix, r::Int;
             A, pg_norm = update_BPG(M, A; kwargs...)
         elseif algo == :dyn_nolips
             A, pg_norm, step = update_BPGD(M, A, step; kwargs...)
+        elseif algo == :adap_nolips
+            A, pg_norm, step, alpha, sigma = update_BPGA(M, A, step, alpha, sigma; kwargs...)
         elseif algo == :beta
             A, pg_norm, E = update_Beta(M, A, E; kwargs...)
         elseif algo == :cd
@@ -138,7 +144,8 @@ function SymNMF(M::GenMatrix, r::Int;
        println("Constraint satisfaction for penalty method $algo : |A - B|/|A| = ",
         norm(A - Bt) / norm(A))
     end
-
+                                                        
+    println("Terminated after $it iterations.")
     losses[:,1] = cumsum(losses[:,1])
     return A, losses
 end

@@ -45,6 +45,7 @@ function bregman_decrease_cond(M::GenMatrix, A_new::Matrix{Float64},
     return new_loss - old_loss <= lin + Dh(A_new, A_old; alpha = alpha, sigma = sigma) / step
 end
 
+
 """Bregman proximal gradient update with dynamic step size strategy"""
 function update_BPGD(M::GenMatrix, A::Matrix{Float64}, step::Float64 = 1.; alpha::Float64 = 1., sigma::Float64 = 1., max_iter_ls::Int64 = 100, kwargs...)
 

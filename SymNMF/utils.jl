@@ -101,6 +101,7 @@ end
 function clustering_accuracy(true_labels::Vector{Int64},
         predicted_labels::Vector{Int64},
         n_clusters::Int64)
+
     #building the cost matrix
     C = zeros(n_clusters, n_clusters)
 

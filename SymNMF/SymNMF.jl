@@ -97,7 +97,6 @@ function SymNMF(M::GenMatrix, r::Int;
         pg_norm = initial_pgnorm
     end
 
-norm(M)
     while keep_going
         # monitoring loss
         if (monitoring_interval > 0.) && (float(time_ns() - t_prev) / 1e9 >= monitoring_interval) || (it == 0)

@@ -46,7 +46,6 @@ function update_PG_armijo(M::GenMatrix, A::Matrix{Float64},
         keep_going = !suff_decrease && (it <= max_inner_iter)
     end
 
-#     println("PG  [it] ", it, " [eff_step_size] ", step)
     pgrad_norm = pgradnorm_SNMF(grad, A)
     return A_temp, pgrad_norm, step / beta^2
 end

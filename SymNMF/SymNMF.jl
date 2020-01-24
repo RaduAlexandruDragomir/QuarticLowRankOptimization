@@ -76,10 +76,11 @@ function SymNMF(M::GenMatrix, r::Int;
     # algorithm-specific initializations
     if (algo == :pga) || (algo == :nolips) || (algo == :dyn_nolips)
         step = kwargs[:step]
-    
-    elseif (algo == :adap_nolips)
-        step, alpha, sigma = 1., 1., 1.
-
+        
+        if (algo == :nolips) || (algo == :dyn_nolips)
+            alpha = 6.
+            sigma = 2*norm(M)
+        end
     elseif algo == :beta
         E = frobenius_sym_loss(A, M)
 
@@ -96,6 +97,7 @@ function SymNMF(M::GenMatrix, r::Int;
         pg_norm = initial_pgnorm
     end
 
+norm(M)
     while keep_going
         # monitoring loss
         if (monitoring_interval > 0.) && (float(time_ns() - t_prev) / 1e9 >= monitoring_interval) || (it == 0)
@@ -118,9 +120,7 @@ function SymNMF(M::GenMatrix, r::Int;
         elseif algo == :nolips
             A, pg_norm = update_BPG(M, A; kwargs...)
         elseif algo == :dyn_nolips
-            A, pg_norm, step = update_BPGD(M, A, step; kwargs...)
-        elseif algo == :adap_nolips
-            A, pg_norm, step, alpha, sigma = update_BPGA(M, A, step, alpha, sigma; kwargs...)
+            A, pg_norm, step = update_BPGD(M, A, step; alpha = alpha, sigma = sigma, kwargs...)
         elseif algo == :beta
             A, pg_norm, E = update_Beta(M, A, E; kwargs...)
         elseif algo == :cd

@@ -46,7 +46,7 @@ function bregman_decrease_cond(M::GenMatrix, A_new::Matrix{Float64},
 end
 
 """Bregman proximal gradient update with dynamic step size strategy"""
-function update_BPGD(M::GenMatrix, A::Matrix{Float64}, step::Float64 = 1.; alpha::Float64 = 1., sigma::Float64 = 1., max_iter_ls::Int64 = 100., kwargs...)
+function update_BPGD(M::GenMatrix, A::Matrix{Float64}, step::Float64 = 1.; alpha::Float64 = 1., sigma::Float64 = 1., max_iter_ls::Int64 = 100, kwargs...)
 
     current_step = step
     grad = grad_SNMF(M, A)
@@ -66,65 +66,11 @@ function update_BPGD(M::GenMatrix, A::Matrix{Float64}, step::Float64 = 1.; alpha
 
         current_step = current_step / 2
     end
-    
-    # computing the BB step size
-#     delta_h4 = norm(A_new) * A_new
-#     delta_h = grad_h(A_new; alpha = alpha) - grad_h(A; alpha = alpha)
-#     delta_f = grad_SNMF(M, A_new) - grad
-#     delta_A = A_new - A
-#     acc_h = sum(delta_h .* delta_A) / norm(delta_A) ^ 2
-#     acc_f = abs(sum(delta_f .* delta_A)) / norm(delta_A) ^ 2
-#     current_step = acc_h / acc_f
-#     current_step = abs(sum((delta_A) .* (delta_h)) / sum((delta_A) .* (delta_f)))
-#     println("[step] $current_step  [ls_its] $it")
     
     # standard LS
     current_step = current_step * 4
-    
-#     println("\t\t [BB step size] ", current_step)
-    
     return A_new, norm(grad), current_step
 end
 
-"""Bregman proximal gradient update with adaptive coefficient strategy"""
-function update_BPGA(M::GenMatrix, A::Matrix{Float64}, step::Float64 = 1., alpha::Float64 = 1., sigma::Float64 = 1.; max_iter_ls::Int64 = 100, kwargs...)
-
-    grad = grad_SNMF(M, A)
-    old_loss = frobenius_sym_loss(A, M)
-
-    keep_going = true
-    it = 0
-    current_step = step
-    A_new = copy(A)
-
-    while keep_going
-        it += 1
-        A_new = bregman_grad_step(A, grad, current_step, alpha, sigma)
-
-        # checking decrease condition
-        keep_going = !bregman_decrease_cond(M, A_new, A, grad, old_loss, current_step; alpha = alpha, sigma = sigma)
-        keep_going = keep_going && (it <= max_iter_ls)
-
-        current_step = current_step / 2
-    end
-    
-    # computing the adaptive coefficients for the next iteration
-    delta_A = A_new - A
-    
-    # 1) quartic part
-    delta_h4 = norm(A_new) * A_new - norm(A) * A
-    delta_f4 = 2 * A_new * (A_new' * A_new) - 2 * A * (A' * A)
-    
-    # 2) quadratic part
-    delta_f2 = M * (A_new - A)
-    
-    #TODO : safeguard
-    alpha = abs(sum((delta_A) .* (delta_h4)) / sum((delta_A) .* (delta_f4)))
-    sigma = abs(sum((delta_A) .* (delta_A)) / sum((delta_A) .* (delta_f2)))
-        
-    println("[step] $current_step [alpha] $alpha [sigma] $sigma  [ls_its] $it")
-    
-    return A_new, norm(grad), current_step * 4, alpha, sigma
-end
 
 

@@ -79,7 +79,7 @@ function solve_cubic(c::Float64, sigma::Float64 = 1.)
     sq_delta = sqrt(delta)
 
     b = 0.5 * c + sigma3 / 27.
-    
+
     z = z + cbrt(b + 0.5 * sq_delta)
     z = z + cbrt(b - 0.5 * sq_delta)
 

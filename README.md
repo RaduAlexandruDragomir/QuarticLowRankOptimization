@@ -1,8 +1,9 @@
-# Quartic non-Euclidean algorithms for low rank minimization
+# Quartic first order algorithms for low rank minimization
 
 We provide the code used for the numerical experiments in
 
 > [1] R.A. Dragomir, A. d'Aspremont, J. Bolte, "Quartic First-Order Methods for Low Rank Minimization" arXiv preprint arXiv:1901.10791, 2019.
+
 
 ## 1. Symmetric Nonnegative Matrix Factorization
 
@@ -40,3 +41,24 @@ Least Squares problems for SymANLS. We used the code provided in [this package].
 
 
 ## 2. Euclidean Distance Matrix Completion
+
+The [`EDM/`](EDM/) folder provides the code for the experiments on Euclidean Distane Matrix Completion (EDMC) problems.
+
+The script [`EDM/main.m`](EDM/main.m) can be run to reproduce the experiments on Euclidean distance matrix completion with the synthetic Helix dataset.
+
+The number of random initializations to average can be adjusted with the variable `n_runs`, and the number of data points with n. Note that, because of the variance induced by initial conditions, we advise do
+at least 5 runs to get consistent results.
+
+**Note:** Our implementation relies heavily on the code provided by Bamdev Mishra and Gilles Meyer that can be bound [here](https://bamdevmishra.in/codes/edmcompletion/), which is described in the following reference
+
+> [2] B. Mishra, G. Meyer, and R. Sepulchre. Low-rank optimization for distance matrix completion. In Proceedings of the IEEE Conference on Decision and Control, 2011.
+
+We used their implementation of Gradient Descent and Riemannian trust-region
+algorithm as baselines. In order to run our experiments, we modified part of their code so as to monitor
+the RMSE value across iterations. The modified code is in the [`EDM/code_Mishra2011`](EDM/code_Mishra2011) folder.
+
+The Bregman Gradient/NoLips algorithm for EDMC is implemented in [`EDM/bg_dist_completion.m`](EDM/bg_dist_completion.m)
+In order to do a fair comparison with the gradient descent implementation of Mishra et al. [2], we took the same line search and gradient computing procedures as in the function in [`EDM/code_Mishra2011/gd_dist_completion.m`](EDM/code_Mishra2011/gd_dist_completion.m).
+
+
+

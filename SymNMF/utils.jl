@@ -55,7 +55,7 @@ end
     f(A,B) = 0.5 * |AB - M| ^ 2
 """
 function pgradnorm_NMF(M::GenMatrix, Mt::GenMatrix, A::Matrix{Float64}, Bt::Matrix{Float64};
-    mu::Float64 = 1.)
+    mu::Float64 = 1., kwargs...)
     grad_A = A * (Bt' * Bt) - M * Bt + mu * (A - Bt)
     grad_B = (A' * A) * Bt' - (Mt * A)' + mu * (Bt - A)'
 

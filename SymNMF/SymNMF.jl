@@ -91,10 +91,14 @@ function SymNMF(M::GenMatrix, r::Int;
         A_coeffs = zeros(size(A))
         B_coeffs = zeros(size(A))
 
-    elseif (algo == :sym_hals) || (algo == :sym_anls)
+    elseif (algo == :sym_hals) || (algo == :sym_anls) || (algo == :admm)
         Bt = copy(A)
         initial_pgnorm = pgradnorm_NMF(M, Mt, A, Bt; kwargs...)
         pg_norm = initial_pgnorm
+                            
+        if algo == :admm
+            Lambda = zeros(size(A))
+        end
     end
 
     while keep_going
@@ -129,6 +133,9 @@ function SymNMF(M::GenMatrix, r::Int;
             pg_norm = pgradnorm_NMF(M, Mt, A, Bt; kwargs...)
         elseif algo == :sym_anls
             A, Bt, = update_ANLS(M, Mt, A, Bt; kwargs...)
+            pg_norm = pgradnorm_NMF(M, Mt, A, Bt; kwargs...)
+        elseif algo == :admm
+            A, Bt, Lambda = update_ADMM(M, Mt, A, Bt, Lambda; kwargs...)
             pg_norm = pgradnorm_NMF(M, Mt, A, Bt; kwargs...)
         end
 

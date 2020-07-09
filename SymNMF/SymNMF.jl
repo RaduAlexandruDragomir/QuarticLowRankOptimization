@@ -61,8 +61,12 @@ function SymNMF(M::GenMatrix, r::Int;
     else
         Mt = Matrix(M')
     end
-
-    initial_pgnorm = max(pgradnorm_SNMF(grad_SNMF(M, A), A), 1e-16)
+   
+    MA = zeros(size(A))
+    grad = zeros(size(A))
+   
+    grad_SNMF!(grad, M, A, MA)
+    initial_pgnorm = max(pgradnorm_SNMF(grad, A), 1e-16)
     pg_norm = initial_pgnorm
 
     losses = Array{Float64}(undef, 0, 4)
@@ -81,6 +85,9 @@ function SymNMF(M::GenMatrix, r::Int;
             alpha = 6.
             sigma = 2*norm(M)
         end
+    
+        A_old = copy(A)
+
     elseif algo == :beta
         E = frobenius_sym_loss(A, M)
 
@@ -105,7 +112,7 @@ function SymNMF(M::GenMatrix, r::Int;
         # monitoring loss
         if (monitoring_interval > 0.) && (float(time_ns() - t_prev) / 1e9 >= monitoring_interval) || (it == 0)
             delta_t = float(time_ns() - t_prev) / 1e9
-            loss = frobenius_sym_loss(A, M)
+            loss = frobenius_sym_loss(A, M, MA)
             clust_acc = 0.
 
             if monitor_accuracy
@@ -119,7 +126,7 @@ function SymNMF(M::GenMatrix, r::Int;
 
         # doing the update specific to each algorithm
         if algo == :pga
-            A, pg_norm, step = update_PG_armijo(M, A, step; kwargs...)
+            pg_norm, step = update_PG_armijo!(M, A, A_old, grad, MA, step; kwargs...)
         elseif algo == :nolips
             A, pg_norm = update_BPG(M, A; kwargs...)
         elseif algo == :dyn_nolips

@@ -30,10 +30,30 @@ end
 """Efficient computation of the SymNMF loss function
     0.5 * |M - AAt| ^ 2
 """
+function frobenius_sym_loss(A::Matrix{Float64}, M::GenMatrix, MA::Matrix{Float64})
+   t1 = 0.5 * (norm(M) ^ 2 + norm(A' * A) ^ 2) # A' * A is a small r x r sized matrix
+   
+   mul!(MA, M, A)
+   return t1 - dot(A, MA)
+end
+
+"""Same, but without preallocating MA
+"""
 function frobenius_sym_loss(A::Matrix{Float64}, M::GenMatrix)
    t1 = 0.5 * (norm(M) ^ 2 + norm(A' * A) ^ 2)
-   t2 = sum(A .* (M * A))
+   
+   t2 = dot(A, M * A)
    return t1 - t2
+end
+
+"""Computes the gradient of the SNMF objective function
+    0.5 * |M - A * A'|^2
+with preallocated M * A
+"""
+function grad_SNMF!(G::Matrix{Float64}, M::GenMatrix, A::Matrix{Float64}, MA::Matrix{Float64})
+    mul!(MA, M, A)
+    mul!(G, A, A' * A)
+    @. G = 2 * (G - MA)
 end
 
 """Computes the gradient of the SNMF objective function
@@ -41,14 +61,26 @@ end
 """
 function grad_SNMF(M::GenMatrix, A::Matrix{Float64})
     MA = M * A
-    AAtA = A * (A' * A) # the order is important !!
+    AAtA = A * (A' * A) # order is important for efficient computation
     return 2 * (AAtA - MA)
 end
 
 """computes the squared norm of projected gradient of SNMF (useful for stopping criterion)
 """
 function pgradnorm_SNMF(grad::Matrix{Float64}, A::Matrix{Float64})
-    return norm(grad[A .> 0.]) ^2 + norm(min.(0., grad[A .== 0.])) ^ 2
+    t1 = reduce(+, grad[i] ^ 2 for i in 1:length(A) if A[i] > 0.; init = 0.)
+    t2 = reduce(+, min(0., grad[i]) ^ 2 for i in 1:length(A) if A[i] == 0.; init = 0.)
+    t1 + t2
+end
+
+""" projection on nonnegative orthant"""
+function project_orthant!(A::Array{Float64})
+
+    for i = 1:length(A)
+        if A[i] < 0.
+            A[i] = 0.
+        end
+    end
 end
 
 """computes the squared norm of the projected gradient of regular NMF

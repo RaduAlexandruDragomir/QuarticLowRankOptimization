@@ -9,26 +9,25 @@ Reference:
 
 Lambda is the dual matrix variable.
 """
-function update_ADMM(M::GenMatrix, Mt::GenMatrix,
+function update_ADMM!(M::GenMatrix, Mt::GenMatrix,
         A::Matrix{Float64}, Bt::Matrix{Float64}, Lambda::Matrix{Float64};
-        rho::Float64 = 1.)
+        rho::Float64 = 1., tol_inner::Float64 = 1e-6)
 
             # updating B
     gram_B = A' * A + rho * I
-    grad_B = (Mt * A)' + rho * A' - Lambda
+    grad_B = (Mt * A)' + rho * A' - Lambda'
 
-    Bt = Matrix(nnls_pivot(gram_B, grad_B, gram = true;
-        X_init = Matrix(Bt'), tol = tol_inner)')
-
+    copy!(Bt, Matrix(nnls_pivot(gram_B, grad_B, gram = true;
+    X_init = Matrix(Bt'), tol = tol_inner)'))
+    
     # updating A
     gram_A = Bt' * Bt + rho * I
-    grad_A = rho * Bt' + (M * Bt)' + Lambda
-    A = Matrix(nnls_pivot(gram_A, grad_A, gram = true;
-        X_init = Matrix(A'), tol = tol_inner)')
-
-    # updating the multiplier
-    Lambda = Lambda + rho * (Bt - A)
+    grad_A = rho * Bt' + (M * Bt)' + Lambda'
     
-    return A, Bt, Lambda
+    copy!(A, Matrix(nnls_pivot(gram_A, grad_A, gram = true;
+        X_init = Matrix(A'), tol = tol_inner)'))
+    
+    # updating the multiplier
+    @. Lambda = Lambda + rho * (Bt - A)
 end
 

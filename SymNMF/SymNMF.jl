@@ -89,7 +89,9 @@ function SymNMF(M::GenMatrix, r::Int;
         A_old = copy(A)
 
     elseif algo == :beta
-        E = frobenius_sym_loss(A, M)
+        E = frobenius_sym_loss(A, M, MA)
+        A_new = zeros(size(A))
+        AAtA  = zeros(size(A))
 
     elseif algo == :cd
         C = sum(abs2, A, dims = 1)[:]
@@ -100,6 +102,11 @@ function SymNMF(M::GenMatrix, r::Int;
 
     elseif (algo == :sym_hals) || (algo == :sym_anls) || (algo == :admm)
         Bt = copy(A)
+        
+        MBt = zeros(size(A))
+        BBt = zeros(r,r)
+        grad_col = zeros(n)
+        
         initial_pgnorm = pgradnorm_NMF(M, Mt, A, Bt; kwargs...)
         pg_norm = initial_pgnorm
                             
@@ -128,22 +135,23 @@ function SymNMF(M::GenMatrix, r::Int;
         if algo == :pga
             pg_norm, step = update_PG_armijo!(M, A, A_old, grad, MA, step; kwargs...)
         elseif algo == :nolips
-            A, pg_norm = update_BPG(M, A; kwargs...)
+            pg_norm = update_BPG!(M, A, grad, MA; kwargs...)
         elseif algo == :dyn_nolips
-            A, pg_norm, step = update_BPGD(M, A, step; alpha = alpha, sigma = sigma, kwargs...)
+            pg_norm, step = update_BPGD!(M, A, A_old, grad, MA, step; alpha = alpha, sigma = sigma, kwargs...)
         elseif algo == :beta
-            A, pg_norm, E = update_Beta(M, A, E; kwargs...)
+            pg_norm, E = update_Beta!(M, A, A_new, MA, AAtA, grad, E; kwargs...)
         elseif algo == :cd
-            A, pg_norm, A_coeffs, B_coeffs, C, L, D = update_CD(M, A, A_coeffs, B_coeffs, C, L, D)
+            pg_norm = update_CD!(M, A, MA, grad, A_coeffs, B_coeffs, C, L, D)
         elseif algo == :sym_hals
-            A, Bt = update_symHALS(M, Mt, A, Bt; kwargs...)
-            pg_norm = pgradnorm_NMF(M, Mt, A, Bt; kwargs...)
+            pg_norm = update_symHALS!(M, Mt, A, Bt, BBt, MBt, grad_col, grad; kwargs...)
         elseif algo == :sym_anls
-            A, Bt, = update_ANLS(M, Mt, A, Bt; kwargs...)
-            pg_norm = pgradnorm_NMF(M, Mt, A, Bt; kwargs...)
+            update_ANLS!(M, Mt, A, Bt; kwargs...)
+            grad_SNMF!(grad, M, A, MA)
+            pg_norm = pgradnorm_SNMF(grad, A)
         elseif algo == :admm
-            A, Bt, Lambda = update_ADMM(M, Mt, A, Bt, Lambda; kwargs...)
-            pg_norm = pgradnorm_NMF(M, Mt, A, Bt; kwargs...)
+            A, Bt, Lambda = update_ADMM!(M, Mt, A, Bt, Lambda; kwargs...)
+            grad_SNMF!(grad, M, A, MA)
+            pg_norm = pgradnorm_SNMF(grad, A)
         end
 
         # checking stopping criterion

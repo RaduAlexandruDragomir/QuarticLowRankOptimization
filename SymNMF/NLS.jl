@@ -28,10 +28,8 @@ function pivot_cache(AtA::Matrix{Float64},
     # dimensions, initialize solution
     q = size(AtA,1)
 
-	# let us try smth else
     x = zeros(q) # primal variables
     y = -Atb    # dual variables
-
 
     # parameters for swapping
     α = 3
@@ -117,8 +115,7 @@ function nnls_pivot(A::Matrix{Float64},
 	if X_init == nothing
     	X = zeros(n, k)
 	else
-		#X = copy(X_init)
-		X = zeros(n, k)
+		X = copy(X_init)
 	end
 
 	for i = 1:k

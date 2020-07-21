@@ -43,35 +43,44 @@ function best_poly_root(a::Float64, b::Float64)
     end
 end
 
+   
+   
 """Does a full iteration of coordinate descent SymNMF.
 Reference:
     A. Vandaele, N.Gillis et al.
     Efficient and non-convex coordinate descent for symmetric nonnegative matrix factorization.
     IEEE Transactions on Signal Processing, 2016
 """
-function update_CD(M::GenMatrix, A::Matrix{Float64},
+function update_CD!(M::GenMatrix, A::Matrix{Float64}, MA::Matrix{Float64}, grad::Matrix{Float64},
     A_coeffs::Matrix{Float64}, B_coeffs::Matrix{Float64},
     C::Vector{Float64}, L::Vector{Float64}, D::Matrix{Float64})
 
     n, r = size(A)
-
+    
     for j = 1:r
         for i = 1:n
             A_coeffs[i,j] = C[j] + L[i] - 2. * A[i,j] ^ 2 - M[i,i]
-            B_coeffs[i,j] = A[i,:]' * D[:,j] - A[:,j]' * M[:,i]
+          
+            Ai = @view(A[i,:])
+            Dj = @view(D[:,j])
+            Aj = @view(A[:,j])
+            Mi = @view(M[:,i])
+            B_coeffs[i,j] = dot(Ai, Dj) - dot(Aj, Mi)
             B_coeffs[i,j] = B_coeffs[i,j] - A[i,j] ^ 3 - A[i,j] * A_coeffs[i,j]
             Aij_new = best_poly_root(A_coeffs[i,j], B_coeffs[i,j])
 
             C[j] = C[j] + Aij_new ^ 2 - A[i,j] ^ 2
             L[i] = L[i] + Aij_new ^ 2 - A[i,j] ^ 2
 
-            D[j,:] = D[j,:] + A[i,:] * (Aij_new - A[i,j])
-            D[:,j] = D[j,:]
+            @. D[j,:] = D[j,:] + A[i,:] * (Aij_new - A[i,j])
+            @. D[:,j] = D[j,:]
             D[j,j] = C[j]
             A[i,j] = Aij_new
+
         end
     end
-    pg_norm = pgradnorm_SNMF(grad_SNMF(M, A), A)
-#     pg_norm = 1e20 # stopping crit not suited for this algorithm
-    return A, pg_norm, A_coeffs, B_coeffs, C, L, D
+
+    grad_SNMF!(grad, M, A, MA)
+    pg_norm = pgradnorm_SNMF(grad, A)
+    return pg_norm
 end

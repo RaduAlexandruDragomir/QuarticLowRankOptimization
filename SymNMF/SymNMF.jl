@@ -39,7 +39,7 @@ Output
 function SymNMF(M::GenMatrix, r::Int;
         algo::Symbol = :bpg,
         max_iter::Int = 500, max_time::Float64 = 60.,
-        tol::Float64 = 1e-5,
+        tol::Float64 = 1e-4,
         monitoring_interval = 0.,
         A_init::GenMatrix = nothing,
         monitor_accuracy = false,
@@ -106,10 +106,7 @@ function SymNMF(M::GenMatrix, r::Int;
         MBt = zeros(size(A))
         BBt = zeros(r,r)
         grad_col = zeros(n)
-        
-        initial_pgnorm = pgradnorm_NMF(M, Mt, A, Bt; kwargs...)
-        pg_norm = initial_pgnorm
-                            
+
         if algo == :admm
             Lambda = zeros(size(A))
         end
@@ -149,7 +146,7 @@ function SymNMF(M::GenMatrix, r::Int;
             grad_SNMF!(grad, M, A, MA)
             pg_norm = pgradnorm_SNMF(grad, A)
         elseif algo == :admm
-            A, Bt, Lambda = update_ADMM!(M, Mt, A, Bt, Lambda; kwargs...)
+            update_ADMM!(M, Mt, A, Bt, Lambda; kwargs...)
             grad_SNMF!(grad, M, A, MA)
             pg_norm = pgradnorm_SNMF(grad, A)
         end
@@ -157,16 +154,16 @@ function SymNMF(M::GenMatrix, r::Int;
         # checking stopping criterion
         it += 1
         time_cond = (time_ns() - t0) / 1e9 < max_time
-        keep_going = (it <= max_iter) && time_cond
+        keep_going = (it <= max_iter) && time_cond && pg_norm / initial_pgnorm > tol
 
     end
 
-    if (algo == :sym_hals) || (algo == :sym_anls)
-       println("Constraint satisfaction for penalty method $algo : |A - B|/|A| = ",
-        norm(A - Bt) / norm(A))
-    end
+#     if (algo == :sym_hals) || (algo == :sym_anls) || (algo == :admm)
+#        println("Constraint satisfaction for penalty method $algo : |A - B|/|A| = ",
+#         norm(A - Bt) / norm(A))
+#     end
                                                         
-    println("Terminated after $it iterations.")
+#     println("Terminated after $it iterations.")
     losses[:,1] = cumsum(losses[:,1])
-    return A, losses
+    return A, losses 
 end
